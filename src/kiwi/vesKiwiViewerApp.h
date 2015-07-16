@@ -30,6 +30,17 @@
 // C++ includes
 #include <string>
 
+
+#include <vtkLookupTable.h>
+#include <vtkCellArray.h>
+#include <vtkIntArray.h>
+
+#include "vesGeometryData.h"
+
+#include <vtkNew.h>
+#include<vtkShortArray.h>
+
+
 // Forward declarations
 class vesCamera;
 class vesKiwiCameraSpinner;
@@ -47,6 +58,8 @@ class vtkDataSet;
 class vtkPolyData;
 class vtkImageData;
 
+
+
 class vesKiwiViewerApp : public vesKiwiBaseApp
 {
 public:
@@ -56,6 +69,8 @@ public:
 
   vesKiwiViewerApp();
   ~vesKiwiViewerApp();
+
+  vesGeometryData::Ptr GeometryData;
 
   int numberOfBuiltinDatasets() const;
   int defaultBuiltinDatasetIndex() const;
@@ -83,6 +98,9 @@ public:
   bool initTextureShader(const std::string& vertexSource, const std::string& fragmentSource);
   bool initGouraudTextureShader(const std::string& vertexSource, const std::string& fragmentSource);
   bool initClipShader(const std::string& vertexSource, const std::string& fragmentSource);
+  
+
+void initPointCloudShader(const std::string& vertexSource, const std::string fragmentSource);
 
   bool isAnimating() const;
   void setBackgroundTexture(const std::string& filename);
@@ -124,6 +142,11 @@ public:
   /// Return the spinner instance used to implement camera rotation inertia.
   vesSharedPtr<vesKiwiCameraSpinner> cameraSpinner() const;
 
+  vesKiwiText2DRepresentation* addTextRepresentation(const std::string& text);  //this method was in protected list, but I put it in public list because it neccessary to output some text from applications without rebuild library 
+  void resetScene(); // moved from protected
+  bool loadPCLPointCloud(vtkShortArray* points, vtkUnsignedCharArray* colors);
+ 
+
 protected:
 
   virtual void willRender();
@@ -139,11 +162,9 @@ protected:
 
   void setAnimating(bool animating);
 
-  void resetScene();
-
   vesKiwiPolyDataRepresentation* addPolyDataRepresentation(
     vtkPolyData* polyData, vesSharedPtr<vesShaderProgram> program);
-  vesKiwiText2DRepresentation* addTextRepresentation(const std::string& text);
+
   vesKiwiPlaneWidget* addPlaneWidget();
   bool loadBrainAtlas(const std::string& filename);
   bool loadCanSimulation(const std::string& filename);

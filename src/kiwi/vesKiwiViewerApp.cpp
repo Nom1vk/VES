@@ -54,7 +54,8 @@
 #include <vtkImageData.h>
 #include <vtkPointData.h>
 
-
+#include<vtkShortArray.h>
+ 
 #include <vtksys/SystemTools.hxx>
 
 #include <cassert>
@@ -125,6 +126,8 @@ public:
   vesSharedPtr<vesShaderProgram> TextureShader;
   vesSharedPtr<vesShaderProgram> GouraudTextureShader;
   vesSharedPtr<vesShaderProgram> ClipShader;
+  vesSharedPtr<vesShaderProgram> PointCloudShader;
+
   vesSharedPtr<vesUniform> ClipUniform;
 
   std::vector<vesKiwiDataRepresentation*> DataRepresentations;
@@ -172,10 +175,9 @@ vesKiwiViewerApp::vesKiwiViewerApp()
   this->Internal = new vesInternal();
   this->Internal->CameraSpinner->setInteractor(this->cameraInteractor());
   this->resetScene();
-
-  this->addBuiltinDataset("Utah Teapot", "teapot.vtp");
-  this->addBuiltinDataset("Stanford Bunny", "bunny.vtp");
-  this->addBuiltinDataset("NLM Visible Woman Hand", "visible-woman-hand.vtp");
+  this->addBuiltinDataset("ICP Projective Correspondance", "teapot.vtp");
+  this->addBuiltinDataset("PCL ICP", "bunny.vtp");
+/*  this->addBuiltinDataset("NLM Visible Woman Hand", "visible-woman-hand.vtp");
   this->addBuiltinDataset("NA-MIC Knee Atlas", "AppendedKneeData.vtp");
 
   this->addBuiltinDataset("ROS C Turtle", "cturtle.vtp");
@@ -198,7 +200,7 @@ vesKiwiViewerApp::vesKiwiViewerApp()
     vesVector3f(1.,0.,0.), vesVector3f(0.,0.,-1.));
 
   this->addBuiltinDataset("KiwiViewer Logo", "kiwi.png");
-
+*/
   // These depend on external data, so are commented out for now.
   //this->addBuiltinDataset("SPL-PNL Brain Atlas", "model_info.txt");
   //this->addBuiltinDataset("Can Simulation", "can0000.vtp");
@@ -209,6 +211,7 @@ vesKiwiViewerApp::vesKiwiViewerApp()
   this->initToonShader(
     vesBuiltinShaders::vesToonShader_vert(),
     vesBuiltinShaders::vesToonShader_frag());
+
   this->initGouraudShader(
     vesBuiltinShaders::vesShader_vert(),
     vesBuiltinShaders::vesShader_frag());
@@ -263,7 +266,7 @@ int vesKiwiViewerApp::numberOfBuiltinDatasets() const
 //----------------------------------------------------------------------------
 int vesKiwiViewerApp::defaultBuiltinDatasetIndex() const
 {
-  return 6;
+  return 0;
 }
 
 //----------------------------------------------------------------------------
@@ -633,6 +636,18 @@ bool vesKiwiViewerApp::initClipShader(const std::string& vertexSource, const std
   return true;
 }
 
+ void vesKiwiViewerApp::initPointCloudShader(const std::string& vertexSource, const std::string fragmentSource)
+  {
+   vesShaderProgram::Ptr mShader = this->addShaderProgram(vertexSource, fragmentSource);
+    this->addModelViewMatrixUniform(mShader);
+    this->addProjectionMatrixUniform(mShader);
+    this->addVertexPositionAttribute(mShader);
+    this->addNormalMatrixUniform(mShader);
+    this->addVertexNormalAttribute(mShader);
+    this->addVertexColorAttribute(mShader);
+
+	this->Internal->PointCloudShader=mShader;
+  }
 //----------------------------------------------------------------------------
 void vesKiwiViewerApp::resetScene()
 {
@@ -730,7 +745,8 @@ void vesKiwiViewerApp::setBackgroundTexture(const std::string& filename)
 //----------------------------------------------------------------------------
 void vesKiwiViewerApp::setDefaultBackgroundColor()
 {
-  this->setBackgroundColor(63/255.0, 96/255.0, 144/255.0);
+//  this->setBackgroundColor(63/255.0, 96/255.0, 144/255.0);
+this->setBackgroundColor(0.0, 0.0, 0.0);
 }
 
 //----------------------------------------------------------------------------
@@ -836,6 +852,51 @@ bool vesKiwiViewerApp::loadDataset(const std::string& filename)
   this->addRepresentationsForDataSet(dataSet);
   return true;
 }
+
+
+vesGeometryData::Ptr CreateGeometryData(vtkShortArray* points, vtkUnsignedCharArray* colors)
+{
+  const int numberOfPoints = points->GetNumberOfTuples()*points->GetNumberOfComponents() / 3;
+
+  vesSharedPtr<vesGeometryData> output(new vesGeometryData());
+  vesSourceDataP3f::Ptr sourceData(new vesSourceDataP3f());
+
+  vesVertexDataP3f vertexData;
+  for (int i = 0; i < numberOfPoints; ++i) {
+    vertexData.m_position[0] = points->GetValue(i*3 + 0);
+    vertexData.m_position[1] = points->GetValue(i*3 + 1);
+    vertexData.m_position[2] = points->GetValue(i*3 + 2);
+    sourceData->pushBack(vertexData);
+  }
+
+  output->addSource(sourceData);
+  output->setName("PolyData");
+
+  vesPrimitive::Ptr pointPrimitive (new vesPrimitive());
+  pointPrimitive->setPrimitiveType(vesPrimitiveRenderType::Points);
+  pointPrimitive->setIndexCount(1);
+  output->addPrimitive(pointPrimitive);
+
+
+  vesKiwiDataConversionTools::SetVertexColors(colors, output);
+  return output;
+}
+
+
+bool vesKiwiViewerApp::loadPCLPointCloud(vtkShortArray* points, vtkUnsignedCharArray* colors)
+{
+        this->GeometryData=CreateGeometryData(points, colors);
+	vesKiwiPolyDataRepresentation* rep = new vesKiwiPolyDataRepresentation();
+	rep->initializeWithShader(this->Internal->PointCloudShader);
+	rep->mapper()->setGeometryData(this->GeometryData);
+
+	rep->addSelfToRenderer(this->renderer());
+
+	this->Internal->DataRepresentations.push_back(rep);
+
+	return true;
+}
+
 
 //----------------------------------------------------------------------------
 void vesKiwiViewerApp::setErrorMessage(const std::string& errorTitle, const std::string& errorMessage)
