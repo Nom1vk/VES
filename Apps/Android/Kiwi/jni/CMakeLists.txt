@@ -17,6 +17,7 @@ set(deps
   GLESv2
   log
   ${VES_LIBRARIES}
+  ${VTK_LIBRARIES}
 )
 
 set(kiwi_lib KiwiNative)
