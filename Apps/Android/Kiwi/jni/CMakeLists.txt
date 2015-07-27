@@ -14,8 +14,9 @@ set(sources
 )
 
 set(deps
-  GLESv2
+  GLESv3
   log
+  android
   ${VES_LIBRARIES}
   ${VTK_LIBRARIES}
 )

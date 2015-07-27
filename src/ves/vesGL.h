@@ -44,7 +44,7 @@
 	# endif
 	# define __gl2_h_
 	# define GL_GLEXT_PROTOTYPES // To get glMapBufferOES declaration
-# include <GLES2/gl2ext.h>
+	# include <GLES2/gl2ext.h>
   #endif
 #endif
 
