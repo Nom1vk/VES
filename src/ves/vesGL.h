@@ -37,8 +37,14 @@
     #include <OpenGLES/ES2/gl.h>
     #include <OpenGLES/ES2/glext.h>
   #else
-    #include <GLES2/gl2.h>
-    #include <GLES2/gl2ext.h>
+    # ifdef VES_GLES2
+	#  include <GLES2/gl2.h>
+	# else
+	#  include <GLES3/gl3.h>
+	# endif
+	# define __gl2_h_
+	# define GL_GLEXT_PROTOTYPES // To get glMapBufferOES declaration
+# include <GLES2/gl2ext.h>
   #endif
 #endif
 

@@ -23,6 +23,7 @@ option(BUILD_SHARED_LIBS "Build VES with shared libraries." OFF)
 option(BUILD_TESTING "Build VES with tests enabled." OFF)
 option(VES_USE_VTK "Build the kiwi library.  Requires VTK." OFF)
 option(VES_USE_DESKTOP_GL "Build VES using desktop OpenGL instead of OpenGL ES." OFF)
+option(VES_GLES2 "Build VES using GL ES 2.0 instead of 3.0" OFF)
 
 # include cmake scripts
 include(CMake/ves-macros.cmake)
